@@ -28,9 +28,9 @@ class AttentionLayer(nn.Module):
         # TODO : Compute attention 
     
         #project query, key and value  - 
-        query = self.query_proj 
-        key = self.key_proj
-        value = self.value_proj 
+        query = self.query_proj(query) 
+        key = self.key_proj(key)
+        value = self.value_proj (value)
 
         #compute dot-product attention. Don't forget the scaling value!
         #Expected shape of dot_product is (N, S, T)
@@ -69,21 +69,34 @@ class MultiHeadAttentionLayer(AttentionLayer):
         #project query, key and value
         #after projection, split the embedding across num_heads
         #eg - expected shape for value is (N, H, T, D/H)
-        query = self.query_proj(query).view(N, H, T, D//H).transpose(1, 2)
-        key = self.key_proj(key).view(N, H, T, D//H).transpose(1, 2)
-        value = self.value_proj(value).view(N, H, T, D//H).transpose(1, 2)
+
+        # query = self.query_proj(query).view(N, H, T, D//H).transpose(1, 2)
+        # key = self.key_proj(key).view(N, H, T, D//H).transpose(1, 2)
+        # value = self.value_proj(value).view(N, H, T, D//H).transpose(1, 2)
+
+        query = self.query_proj(query)
+        key = self.key_proj(key)
+        value = self.value_proj(value)
+
+        query = query.view(query.shape[0], query.shape[1],  self.num_heads, -1).transpose(1, 2)
+        key = key.view(key.shape[0], key.shape[1],  self.num_heads, -1).transpose(1, 2)
+        value = value.view(value.shape[0], value.shape[1],  self.num_heads, -1).transpose(1, 2)
+
+
+
 
         #compute dot-product attention separately for each head. Don't forget the scaling value!
         #Expected shape of dot_product is (N, H, S, T)
         dot_product = torch.matmul(query, key.transpose(-2, -1)) / np.sqrt(self.embed_dim / H)
+      
 
         if attn_mask is not None:
             # convert att_mask which is multiplicative, to an additive mask
             # Hint : If mask[i,j] = 0, we want softmax(QKT[i,j] + additive_mask[i,j]) to be 0
             # Think about what inputs make softmax 0.
-            #additive_mask = (1 - attn_mask) * -1e13
-            dot_product = dot_product.masked_fill(attn_mask==0, -1e13)   # work around
-            #dot_product += additive_mask
+            additive_mask = (1 - attn_mask) * -1e13
+            #dot_product = dot_product.masked_fill(attn_mask==0, -1e13)   # work around
+            dot_product += additive_mask
         
         # apply softmax, dropout, and use value
         y =  torch.matmul(self.dropout(F.softmax(dot_product, dim=-1)), value)
