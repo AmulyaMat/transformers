@@ -75,14 +75,15 @@ class MultiHeadAttentionLayer(AttentionLayer):
 
         #compute dot-product attention separately for each head. Don't forget the scaling value!
         #Expected shape of dot_product is (N, H, S, T)
-        dot_product = torch.matmul(query, key.transpose(-2, -1)) / (self.embed_dim / H) ** 1/2
+        dot_product = torch.matmul(query, key.transpose(-2, -1)) / np.sqrt(self.embed_dim / H)
 
         if attn_mask is not None:
             # convert att_mask which is multiplicative, to an additive mask
             # Hint : If mask[i,j] = 0, we want softmax(QKT[i,j] + additive_mask[i,j]) to be 0
             # Think about what inputs make softmax 0.
-            additive_mask = ...
-            dot_product += additive_mask
+            #additive_mask = (1 - attn_mask) * -1e13
+            dot_product = dot_product.masked_fill(attn_mask==0, -1e13)   # work around
+            #dot_product += additive_mask
         
         # apply softmax, dropout, and use value
         y =  torch.matmul(self.dropout(F.softmax(dot_product, dim=-1)), value)
@@ -234,6 +235,9 @@ class TransformerDecoder(nn.Module):
         # This mask is multiplicative
         # setting mask[i,j] = 0 means jth element of the sequence is not used 
         # to predict the ith element of the sequence.
+
+        mask = torch.tril(torch.ones(_len, _len)).to(self.device)
+
         return mask
                                       
     def forward(self, features, captions):
