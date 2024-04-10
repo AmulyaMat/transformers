@@ -46,10 +46,12 @@ class Trainer:
                 - predictions: PyTorch Tensor of shape (N, C) giving logits for each class
                 - labels: PyTorch Tensor of shape (N,) giving labels for each input
         """
+        
 
         
         # TODO - Compute cross entropy loss between predictions and labels. 
-        loss = None
+        criterion = torch.nn.CrossEntropyLoss()
+        loss = criterion(predictions, labels)
         
 
         return loss
