@@ -51,6 +51,7 @@ class Trainer:
         
         # TODO - Compute cross entropy loss between predictions and labels. 
         criterion = torch.nn.CrossEntropyLoss()
+        #pooled_logits = torch.mean(predictions, dim=1)
         loss = criterion(predictions, labels)
         
 
