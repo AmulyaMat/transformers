@@ -95,7 +95,7 @@ class ViT(nn.Module):
         patches = self.patchify(images)
         patches_embedded = self.patch_embedding(patches)
         
-        output = None # TODO (append a CLS token to the beginning of the sequence of patch embeddings)
+        output = torch.cat([self.cls_token.expand(patches.shape[0],-1,-1), patches_embedded], dim=1)  # CLS token is first arg in .cat()'s list
 
         output = self.positional_encoding(patches_embedded)
         mask = torch.ones((self.num_patches, self.num_patches), device=self.device)
@@ -103,8 +103,8 @@ class ViT(nn.Module):
         for layer in self.layers:
             output = layer(output, mask)
 
-        output = torch.cat([self.cls_token.expand(patches.shape[0],-1,-1), patches_embedded], dim=1)  # TODO (take the embedding corresponding to the [CLS] token and feed it through a linear layer to obtain the logits for each class)
-
+        output = self.fc(output[:, 0, :]) 
+        
         return output
 
     def _init_weights(self, module):
